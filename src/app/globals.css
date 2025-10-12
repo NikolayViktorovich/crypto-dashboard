@@ -2,25 +2,89 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1a1a1a;
+  --card-bg: #f9fafb;
+  --card-border: #e5e7eb;
+  --accent:  #6b7280;
+  --text-secondary: #6b7280;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+[data-theme="dark"] {
+  --background: #1a1a1a;
+  --foreground: #e5e7eb;
+  --card-bg: #2d2d2d;
+  --card-border: #4b4b4b;
+  --accent:#4b4b4b;
+  --text-secondary: #9ca3af;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Montserrat', sans-serif;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+input, button {
+  font-family: 'Montserrat', sans-serif;
+}
+
+.theme-toggle {
+  padding: 8px;
+  border-radius: 50%;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+[data-theme="light"] .theme-toggle {
+  background: #ffffff;
+  color: #6b7280;
+}
+
+[data-theme="dark"] .theme-toggle {
+  background: #2d2d2d;
+  color: #e5e7eb;
+}
+
+[data-theme="light"] .selected-coin {
+  color: #6b7280;
+}
+
+[data-theme="dark"] .selected-coin {
+  color: #9ca3af;
+}
+
+.zoom-button {
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.zoom-button:hover {
+  background: var(--accent);
+  color: #ffffff;
+  transform: scale(1.05);
+}
+table tr:hover {
+  background-color: #f3f4f6 !important; 
+}
+[data-theme="dark"] table tr:hover {
+  background-color: #374151 !important; 
+}
+[data-theme="light"] input[type="text"] {
+  background-color: #1f1f20 !important; 
 }

@@ -1,103 +1,376 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect, useRef } from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ChartData,
+  ChartOptions,
+  Chart,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+import { motion, AnimatePresence } from 'framer-motion';
+import { SunIcon, MoonIcon, ZoomInIcon, ZoomOutIcon, ResetIcon, Cross2Icon } from '@radix-ui/react-icons';
+import { CoinMarket, GlobalData, MarketData } from '../app/types/crypto';
+import { fetchTopCoins, fetchCoinPriceHistory, fetchGlobalData } from '../app/lib/api';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+
+export default function Dashboard() {
+  const [topCoins, setTopCoins] = useState<CoinMarket[]>([]);
+  const [selectedCoin, setSelectedCoin] = useState<CoinMarket | null>(null);
+  const [priceHistory, setPriceHistory] = useState<MarketData | null>(null);
+  const [globalData, setGlobalData] = useState<GlobalData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const chartRef = useRef<Chart<'line', number[], string> | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      import('chartjs-plugin-zoom').then((zoom) => {
+        ChartJS.register(zoom.default);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    const initialTheme = savedTheme || 'dark';
+    setTheme(initialTheme);
+    document.documentElement.setAttribute('data-theme', initialTheme);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [coins, global] = await Promise.all([fetchTopCoins(), fetchGlobalData()]);
+        setTopCoins(coins);
+        setSelectedCoin(coins[0]);
+        setGlobalData(global);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setError('Failed to load data. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (selectedCoin) {
+      fetchCoinPriceHistory(selectedCoin.id)
+        .then(setPriceHistory)
+        .catch(() => setError('Failed to load price history.'));
+    }
+  }, [selectedCoin]);
+
+  const filteredCoins = topCoins.filter(coin =>
+    coin.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const clearSearch = () => {
+    setSearch('');
+  };
+
+  const chartData: ChartData<'line', number[], string> | null = priceHistory
+    ? {
+        labels: priceHistory.prices.map(([timestamp]: [number, number]) =>
+          new Date(timestamp).toLocaleDateString()
+        ),
+        datasets: [
+          {
+            label: selectedCoin ? `${selectedCoin.name} Price (USD)` : 'Price (USD)',
+            data: priceHistory.prices.map(([_, price]: [number, number]) => price),
+            borderColor: 'var(--accent)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            pointRadius: 3,
+            pointHoverRadius: 6,
+          },
+        ],
+      }
+    : null;
+
+  const options: ChartOptions<'line'> = {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top' as const },
+      title: { display: true, text: 'Цена за 30 дней', font: { family: 'Montserrat', size: 18 } },
+      tooltip: { enabled: true },
+      zoom: {
+        zoom: {
+          wheel: { enabled: true },
+          pinch: { enabled: true },
+          mode: 'xy' as const,
+        },
+        pan: {
+          enabled: true,
+          mode: 'xy' as const,
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+      },
+      y: {
+        grid: {
+          color: 'var(--card-border)',
+        },
+      },
+    },
+  };
+
+  const zoomIn = () => {
+    if (chartRef.current) {
+      chartRef.current.zoom(1.1); 
+    }
+  };
+
+  const zoomOut = () => {
+    if (chartRef.current) {
+      chartRef.current.zoom(0.9);
+    }
+  };
+
+  const resetZoom = () => {
+    if (chartRef.current) {
+      chartRef.current.resetZoom();
+    }
+  };
+
+  if (loading) {
+    return (
+      <motion.div
+        className="flex justify-center items-center h-screen"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="text-2xl font-semibold">Загрузка...</div>
+      </motion.div>
+    );
+  }
+
+  if (error) {
+    return (
+      <motion.div
+        className="flex justify-center items-center h-screen text-red-500"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="text-2xl font-semibold">{error}</div>
+      </motion.div>
+    );
+  }
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <motion.div
+      className="min-h-screen p-6 md:p-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Header */}
+      <motion.div
+        className="flex justify-between items-center mb-8"
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h1 className="text-3xl md:text-4xl font-bold">Crypto Dashboard</h1>
+        <motion.button
+          onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+          className="theme-toggle p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          {theme === 'light' ? <MoonIcon className="w-6 h-6" /> : <SunIcon className="w-6 h-6" />}
+        </motion.button>
+      </motion.div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Поиск */}
+      <motion.div
+        className="mb-6 relative"
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <input
+          type="text"
+          placeholder="Поиск монет..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full p-3 pr-10 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-all"
+        />
+        {search && (
+          <motion.button
+            onClick={clearSearch}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <Cross2Icon className="w-5 h-5" />
+          </motion.button>
+        )}
+      </motion.div>
+
+      {/* Глобальная статистика */}
+      <motion.div
+        className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+      >
+        <div className="card p-6 text-center">
+          <h2 className="text-lg font-medium text-[var(--text-secondary)]">Общая капитализация</h2>
+          <p className="text-2xl font-bold mt-2">
+            {globalData?.data?.total_market_cap?.usd
+              ? `$${(globalData.data.total_market_cap.usd / 1e12).toFixed(2)}T`
+              : 'N/A'}
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        <div className="card p-6 text-center">
+          <h2 className="text-lg font-medium text-[var(--text-secondary)]">Объем торгов (24ч)</h2>
+          <p className="text-2xl font-bold mt-2">
+            {globalData?.data?.total_volume?.usd
+              ? `$${(globalData.data.total_volume.usd / 1e9).toFixed(2)}B`
+              : 'N/A'}
+          </p>
+        </div>
+        <div className="card p-6 text-center">
+          <h2 className="text-lg font-medium text-[var(--text-secondary)]">Активных монет</h2>
+          <p className="text-2xl font-bold mt-2">
+            {globalData?.data?.active_cryptocurrencies?.toLocaleString() ?? 'N/A'}
+          </p>
+        </div>
+      </motion.div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Таблица топ-10 */}
+        <motion.div
+          className="card p-6"
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          <h2 className="text-xl font-semibold mb-4">Топ-10 криптовалют</h2>
+          <AnimatePresence>
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-[var(--card-border)]">
+                  <th className="py-3 text-[var(--text-secondary)]">#</th>
+                  <th className="py-3 text-[var(--text-secondary)]">Монета</th>
+                  <th className="py-3 text-[var(--text-secondary)]">Цена (USD)</th>
+                  <th className="py-3 text-[var(--text-secondary)]">Изменение 24ч</th>
+                  <th className="py-3 text-[var(--text-secondary)]">Рыночная кап.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCoins.map((coin, idx) => (
+                  <motion.tr
+                    key={coin.id}
+                    className={`border-b border-[var(--card-border)] cursor-pointer transition-colors ${
+                      selectedCoin?.id === coin.id
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                    onClick={() => setSelectedCoin(coin)}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3, delay: idx * 0.05 }}
+                  >
+                    <td className="py-3">{idx + 1}</td>
+                    <td className="py-3 flex items-center">
+                      <img src={coin.image} alt={coin.name} className="w-6 h-6 mr-2 rounded-full" />
+                      {coin.name}{' '}
+                      <span className="text-[var(--text-secondary)] ml-1">({coin.symbol.toUpperCase()})</span>
+                    </td>
+                    <td className="py-3">${coin.current_price.toFixed(2)}</td>
+                    <td
+                      className="py-3"
+                      style={{ color: coin.price_change_percentage_24h >= 0 ? '#22c55e' : '#ef4444' }}
+                    >
+                      {coin.price_change_percentage_24h.toFixed(2)}%
+                    </td>
+                    <td className="py-3">${(coin.market_cap / 1e9).toFixed(2)}B</td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </AnimatePresence>
+        </motion.div>
+
+        {/* График */}
+        <motion.div
+          className="card p-6"
+          initial={{ x: 20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          <h2 className="text-xl font-semibold mb-4">График цены</h2>
+          {selectedCoin && chartData && (
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Line data={chartData} options={options} ref={chartRef} />
+              <div className="flex gap-2 mt-4 justify-center">
+                <motion.button
+                  onClick={zoomIn}
+                  className="zoom-button p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  title="Увеличить"
+                >
+                  <ZoomInIcon className="w-5 h-5" />
+                </motion.button>
+                <motion.button
+                  onClick={zoomOut}
+                  className="zoom-button p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  title="Уменьшить"
+                >
+                  <ZoomOutIcon className="w-5 h-5" />
+                </motion.button>
+                <motion.button
+                  onClick={resetZoom}
+                  className="zoom-button p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  title="Сбросить масштаб"
+                >
+                  <ResetIcon className="w-5 h-5" />
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+          <p className="text-center selected-coin mt-4">
+            Выбрано: {selectedCoin ? selectedCoin.name : 'N/A'}
+          </p>
+        </motion.div>
+      </div>
+    </motion.div>
   );
 }
