@@ -53,9 +53,9 @@ export async function fetchTopCoins(attempt = 1): Promise<CoinMarket[]> {
 
     const paprikaData: CoinpaprikaTicker[] = await paprikaRes.json();
     const geckoData: CoinGeckoCoin[] = geckoRes.ok ? await geckoRes.json() : [];
-    const geckoImageMap = new Map(geckoData.map((coin: CoinGeckoCoin) => [coin.id, coin.image]));
+    const geckoImageMap = new Map(geckoData.map((coin) => [coin.id, coin.image]));
 
-    return paprikaData.map((coin: CoinpaprikaTicker) => ({
+    return paprikaData.map((coin) => ({
       id: coin.id,
       symbol: coin.symbol,
       name: coin.name,
@@ -65,15 +65,19 @@ export async function fetchTopCoins(attempt = 1): Promise<CoinMarket[]> {
       price_change_percentage_24h: coin.quotes.USD.percent_change_24h,
       total_volume: coin.quotes.USD.volume_24h,
     }));
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    const errorName = error instanceof Error ? error.name : 'Error';
+    
     console.error('Top coins fetch error:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
+      name: errorName,
+      message: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
       attempt,
       url,
     });
-    if (error.name === 'AbortError') {
+    
+    if (errorName === 'AbortError') {
       throw new Error('Не удалось загрузить топ монет из-за таймаута. Попробуйте позже.');
     }
     throw error;
@@ -112,20 +116,24 @@ export async function fetchCoinPriceHistory(coinId: string, attempt = 1): Promis
 
     const data: CoinpaprikaHistoricalEntry[] = await res.json();
     return {
-      prices: data.map((entry: CoinpaprikaHistoricalEntry) => [
+      prices: data.map((entry) => [
         new Date(entry.timestamp).getTime(),
         entry.price,
       ]),
     };
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    const errorName = error instanceof Error ? error.name : 'Error';
+    
     console.error('Price history fetch error:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
+      name: errorName,
+      message: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
       attempt,
       url,
     });
-    if (error.name === 'AbortError') {
+    
+    if (errorName === 'AbortError') {
       throw new Error('Не удалось загрузить историю цен из-за таймаута. Попробуйте позже.');
     }
     throw error;
@@ -164,15 +172,19 @@ export async function fetchGlobalData(attempt = 1): Promise<GlobalData> {
         active_cryptocurrencies: data.active_cryptocurrencies,
       },
     };
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    const errorName = error instanceof Error ? error.name : 'Error';
+    
     console.error('Global data fetch error:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
+      name: errorName,
+      message: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
       attempt,
       url,
     });
-    if (error.name === 'AbortError') {
+    
+    if (errorName === 'AbortError') {
       throw new Error('Не удалось загрузить глобальные данные из-за таймаута. Попробуйте позже.');
     }
     throw error;

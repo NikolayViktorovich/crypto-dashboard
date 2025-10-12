@@ -33,7 +33,6 @@ export default function Dashboard() {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const chartRef = useRef<Chart<'line', number[], string> | null>(null);
 
-  // Оптимизация для мобильных: уменьшенные анимации
   const isMobile = typeof window !== 'undefined' && /Mobi|Android/i.test(navigator.userAgent);
   const motionProps = isMobile
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.2 } }

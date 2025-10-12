@@ -1,14 +1,52 @@
-export interface CoinMarketCapResponse {
+export interface CoinMarketCapQuoteResponse {
   data: {
-    [id: string]: CoinMarketCapCoin;
+    [id: string]: {
+      id: number;
+      name: string;
+      symbol: string;
+      slug: string;
+      quote: {
+        USD: {
+          price: number;
+          percent_change_24h: number;
+          market_cap: number;
+          volume_24h?: number;
+        };
+      };
+    };
+  };
+  status: {
+    timestamp: string;
+    error_code: number;
+    error_message: string | null;
+    elapsed: number;
+    credit_count: number;
   };
 }
 
 export interface CoinMarketCapCoin {
+  id: number;
+  name: string;
+  symbol: string;
+  slug: string;
   quote: {
     USD: {
-      history?: { timestamp: string; price: number }[];
+      price: number;
+      percent_change_24h: number;
+      market_cap: number;
+      volume_24h?: number;
     };
+  };
+}
+
+export interface CoinMarketCapResponse {
+  data: CoinMarketCapCoin[];
+  status: {
+    timestamp: string;
+    error_code: number;
+    error_message: string | null;
+    elapsed: number;
+    credit_count: number;
   };
 }
 

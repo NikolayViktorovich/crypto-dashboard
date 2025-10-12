@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import { CoinMarketCapResponse, CoinMarketCapCoin } from '@/app/types/crypto';
+import { CoinMarketCapQuoteResponse } from '@/app/types/crypto';
+
 export const maxDuration = 60;
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
@@ -24,15 +26,31 @@ export async function GET(request: Request) {
         method: 'GET',
       }
     );
-    const data: CoinMarketCapResponse = await response.json();
-    const coinData: CoinMarketCapCoin = data.data[id];
-    const prices = Object.values(coinData.quote.USD.history || []).map(
-      (h: { timestamp: string; price: number }) => [new Date(h.timestamp).getTime(), h.price]
-    );
 
-    return NextResponse.json({ prices });
+    if (!response.ok) {
+      throw new Error(`CoinMarketCap API responded with status: ${response.status}`);
+    }
+
+    const data: CoinMarketCapQuoteResponse = await response.json();
+    const coinData = data.data[id];
+
+    if (!coinData) {
+      return NextResponse.json({ error: 'Coin not found' }, { status: 404 });
+    }
+
+    // The quotes/latest endpoint doesn't provide historical data
+    // You'll need to use a different approach for price history
+    // For now, return current price data
+    const currentPriceData = {
+      current_price: coinData.quote.USD.price,
+      price_change_percentage_24h: coinData.quote.USD.percent_change_24h,
+      market_cap: coinData.quote.USD.market_cap,
+    };
+
+    return NextResponse.json(currentPriceData);
   } catch (error) {
-    console.error('Error fetching price history:', error);
-    return NextResponse.json({ error: 'Failed to fetch price history' }, { status: 500 });
+    console.error('Error fetching coin data:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch coin data';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
