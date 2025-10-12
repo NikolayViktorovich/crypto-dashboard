@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-
+export const maxDuration = 60;
 export async function GET() {
   const apiKey = process.env.COINMARKETCAP_API_KEY;
   if (!apiKey) {

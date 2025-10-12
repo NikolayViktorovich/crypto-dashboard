@@ -17,8 +17,8 @@ import {
 import { Line } from 'react-chartjs-2';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SunIcon, MoonIcon, ZoomInIcon, ZoomOutIcon, ResetIcon, Cross2Icon } from '@radix-ui/react-icons';
-import { CoinMarket, GlobalData, MarketData } from '../app/types/crypto';
-import { fetchTopCoins, fetchCoinPriceHistory, fetchGlobalData } from '../app/lib/api';
+import { CoinMarket, GlobalData, MarketData } from './types/crypto';
+import { fetchTopCoins, fetchCoinPriceHistory, fetchGlobalData } from './lib/api';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -33,8 +33,14 @@ export default function Dashboard() {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const chartRef = useRef<Chart<'line', number[], string> | null>(null);
 
+  // Оптимизация для мобильных: уменьшенные анимации
+  const isMobile = typeof window !== 'undefined' && /Mobi|Android/i.test(navigator.userAgent);
+  const motionProps = isMobile
+    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.2 } }
+    : { initial: { opacity: 0, y: -20 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.5 } };
+
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (!isMobile) {
       import('chartjs-plugin-zoom').then((zoom) => {
         ChartJS.register(zoom.default);
       });
@@ -56,25 +62,43 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [coins, global] = await Promise.all([fetchTopCoins(), fetchGlobalData()]);
+        const [coins, global] = await Promise.all([
+          fetchTopCoins().catch(() => {
+            throw new Error('Не удалось загрузить топ монет.');
+          }),
+          fetchGlobalData().catch(() => {
+            throw new Error('Не удалось загрузить глобальные данные.');
+          }),
+        ]);
         setTopCoins(coins);
         setSelectedCoin(coins[0]);
         setGlobalData(global);
-      } catch (error) {
+        localStorage.setItem('topCoins', JSON.stringify(coins));
+        localStorage.setItem('globalData', JSON.stringify(global));
+      } catch (error: any) {
         console.error('Error loading data:', error);
-        setError('Failed to load data. Please try again later.');
+        setError(error.message || 'Не удалось загрузить данные. Попробуйте позже.');
       } finally {
         setLoading(false);
       }
     }
-    loadData();
+
+    const cachedCoins = localStorage.getItem('topCoins');
+    const cachedGlobal = localStorage.getItem('globalData');
+    if (cachedCoins && cachedGlobal) {
+      setTopCoins(JSON.parse(cachedCoins));
+      setGlobalData(JSON.parse(cachedGlobal));
+      setLoading(false);
+    } else {
+      loadData();
+    }
   }, []);
 
   useEffect(() => {
     if (selectedCoin) {
       fetchCoinPriceHistory(selectedCoin.id)
         .then(setPriceHistory)
-        .catch(() => setError('Failed to load price history.'));
+        .catch(() => setError(`Не удалось загрузить историю цен для ${selectedCoin.name}.`));
     }
   }, [selectedCoin]);
 
@@ -93,7 +117,7 @@ export default function Dashboard() {
         ),
         datasets: [
           {
-            label: selectedCoin ? `${selectedCoin.name} Price (USD)` : 'Price (USD)',
+            label: selectedCoin ? `${selectedCoin.name} Цена (USD)` : 'Цена (USD)',
             data: priceHistory.prices.map(([_, price]: [number, number]) => price),
             borderColor: theme === 'dark' ? '#c7c7c7ff' : 'var(--accent)',
             backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(59, 130, 246, 0.1)',
@@ -116,17 +140,19 @@ export default function Dashboard() {
         font: { family: 'Montserrat', size: 16 } 
       },
       tooltip: { enabled: true },
-      zoom: {
-        zoom: {
-          wheel: { enabled: true },
-          pinch: { enabled: true },
-          mode: 'xy' as const,
-        },
-        pan: {
-          enabled: true,
-          mode: 'xy' as const,
-        },
-      },
+      zoom: isMobile
+        ? undefined 
+        : {
+            zoom: {
+              wheel: { enabled: true },
+              pinch: { enabled: true },
+              mode: 'xy' as const,
+            },
+            pan: {
+              enabled: true,
+              mode: 'xy' as const,
+            },
+          },
     },
     scales: {
       x: {
@@ -141,19 +167,19 @@ export default function Dashboard() {
   };
 
   const zoomIn = () => {
-    if (chartRef.current) {
+    if (chartRef.current && !isMobile) {
       chartRef.current.zoom(1.1);
     }
   };
 
   const zoomOut = () => {
-    if (chartRef.current) {
+    if (chartRef.current && !isMobile) {
       chartRef.current.zoom(0.9);
     }
   };
 
   const resetZoom = () => {
-    if (chartRef.current) {
+    if (chartRef.current && !isMobile) {
       chartRef.current.resetZoom();
     }
   };
@@ -161,12 +187,16 @@ export default function Dashboard() {
   if (loading) {
     return (
       <motion.div
-        className="flex justify-center items-center h-screen"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        className="flex flex-col justify-center items-center h-screen"
+        {...motionProps}
       >
         <div className="text-lg sm:text-2xl font-semibold">Загрузка...</div>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 p-2 bg-blue-500 text-white rounded-lg"
+        >
+          Повторить
+        </button>
       </motion.div>
     );
   }
@@ -174,12 +204,16 @@ export default function Dashboard() {
   if (error) {
     return (
       <motion.div
-        className="flex justify-center items-center h-screen text-red-500"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        className="flex flex-col justify-center items-center h-screen text-red-500"
+        {...motionProps}
       >
         <div className="text-lg sm:text-2xl font-semibold">{error}</div>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 p-2 bg-blue-500 text-white rounded-lg"
+        >
+          Повторить
+        </button>
       </motion.div>
     );
   }
@@ -187,16 +221,14 @@ export default function Dashboard() {
   return (
     <motion.div
       className="min-h-screen p-4 sm:p-6 md:p-8"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
+      {...motionProps}
     >
       {/* Header */}
       <motion.div
         className="flex justify-between items-center mb-6"
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        initial={isMobile ? { opacity: 0 } : { y: -20, opacity: 0 }}
+        animate={isMobile ? { opacity: 1 } : { y: 0, opacity: 1 }}
+        transition={{ duration: isMobile ? 0.2 : 0.5 }}
       >
         <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold">Crypto Dashboard</h1>
         <motion.button
@@ -212,9 +244,9 @@ export default function Dashboard() {
       {/* Поиск */}
       <motion.div
         className="mb-6 relative"
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
+        initial={isMobile ? { opacity: 0 } : { y: -20, opacity: 0 }}
+        animate={isMobile ? { opacity: 1 } : { y: 0, opacity: 1 }}
+        transition={{ duration: isMobile ? 0.2 : 0.5, delay: isMobile ? 0 : 0.2 }}
       >
         <input
           type="text"
@@ -241,9 +273,9 @@ export default function Dashboard() {
       {/* Глобальная статистика */}
       <motion.div
         className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6"
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.4 }}
+        initial={isMobile ? { opacity: 0 } : { y: 20, opacity: 0 }}
+        animate={isMobile ? { opacity: 1 } : { y: 0, opacity: 1 }}
+        transition={{ duration: isMobile ? 0.2 : 0.5, delay: isMobile ? 0 : 0.4 }}
       >
         <div className="card p-4 sm:p-6 text-center">
           <h2 className="text-sm sm:text-lg font-medium text-[var(--text-secondary)]">Общая капитализация</h2>
@@ -273,9 +305,9 @@ export default function Dashboard() {
         {/* Таблица топ-10 */}
         <motion.div
           className="card p-4 sm:p-6 overflow-x-auto"
-          initial={{ x: -20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
+          initial={isMobile ? { opacity: 0 } : { x: -20, opacity: 0 }}
+          animate={isMobile ? { opacity: 1 } : { x: 0, opacity: 1 }}
+          transition={{ duration: isMobile ? 0.2 : 0.5, delay: isMobile ? 0 : 0.6 }}
         >
           <h2 className="text-lg sm:text-xl font-semibold mb-4">Топ-10 криптовалют</h2>
           <AnimatePresence>
@@ -337,50 +369,52 @@ export default function Dashboard() {
         {/* График */}
         <motion.div
           className="card p-4 sm:p-6"
-          initial={{ x: 20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.8 }}
+          initial={isMobile ? { opacity: 0 } : { x: 20, opacity: 0 }}
+          animate={isMobile ? { opacity: 1 } : { x: 0, opacity: 1 }}
+          transition={{ duration: isMobile ? 0.2 : 0.5, delay: isMobile ? 0 : 0.8 }}
         >
           <h2 className="text-lg sm:text-xl font-semibold mb-4">График цены</h2>
-{selectedCoin && chartData && (
-  <motion.div
-    initial={{ scale: 0.95, opacity: 0 }}
-    animate={{ scale: 1, opacity: 1 }}
-    transition={{ duration: 0.5 }}
-    className="h-[300px] sm:h-[400px]"
-  >
-    <Line data={chartData} options={options} ref={chartRef} />
-    <div className="flex gap-3 mt-6 justify-center">
-      <motion.button
-        onClick={zoomIn}
-        className="zoom-button p-1 sm:p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        title="Увеличить"
-      >
-        <ZoomInIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-      </motion.button>
-      <motion.button
-        onClick={zoomOut}
-        className="zoom-button p-1 sm:p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        title="Уменьшить"
-      >
-        <ZoomOutIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-      </motion.button>
-      <motion.button
-        onClick={resetZoom}
-        className="zoom-button p-1 sm:p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        title="Сбросить масштаб"
-      >
-        <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-      </motion.button>
-    </div>
-  </motion.div>
-)}
+          {selectedCoin && chartData && (
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: isMobile ? 0.2 : 0.5 }}
+              className="h-[300px] sm:h-[400px]"
+            >
+              <Line data={chartData} options={options} ref={chartRef} />
+              {!isMobile && (
+                <div className="flex gap-3 mt-6 justify-center">
+                  <motion.button
+                    onClick={zoomIn}
+                    className="zoom-button p-1 sm:p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    title="Увеличить"
+                  >
+                    <ZoomInIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </motion.button>
+                  <motion.button
+                    onClick={zoomOut}
+                    className="zoom-button p-1 sm:p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    title="Уменьшить"
+                  >
+                    <ZoomOutIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </motion.button>
+                  <motion.button
+                    onClick={resetZoom}
+                    className="zoom-button p-1 sm:p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    title="Сбросить масштаб"
+                  >
+                    <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </motion.button>
+                </div>
+              )}
+            </motion.div>
+          )}
           <p className="text-center selected-coin mt-20 text-sm sm:text-base">
             Выбрано: {selectedCoin ? selectedCoin.name : 'N/A'}
           </p>

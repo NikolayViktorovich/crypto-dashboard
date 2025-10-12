@@ -3,6 +3,8 @@ import { CoinMarket, MarketData, GlobalData, CoinpaprikaTicker, CoinpaprikaHisto
 const COINPAPRIKA_BASE = 'https://api.coinpaprika.com/v1';
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
 
+export const maxDuration = 60;
+
 export async function fetchTopCoins(attempt = 1): Promise<CoinMarket[]> {
   const url = `${COINPAPRIKA_BASE}/tickers?limit=10`;
   console.log(`Fetching top coins (attempt ${attempt}): ${url}`);
@@ -11,13 +13,15 @@ export async function fetchTopCoins(attempt = 1): Promise<CoinMarket[]> {
     const [paprikaRes, geckoRes] = await Promise.all([
       fetch(url, {
         headers: { 'User-Agent': 'CryptoDashboard/1.0 (your-email@example.com)' },
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(30000),
+        cache: 'force-cache', 
       }),
       fetch(
         `${COINGECKO_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false`,
         {
           headers: { 'User-Agent': 'CryptoDashboard/1.0 (your-email@example.com)' },
-          signal: AbortSignal.timeout(15000),
+          signal: AbortSignal.timeout(30000),
+          cache: 'force-cache',
         }
       ),
     ]);
@@ -61,11 +65,17 @@ export async function fetchTopCoins(attempt = 1): Promise<CoinMarket[]> {
       price_change_percentage_24h: coin.quotes.USD.percent_change_24h,
       total_volume: coin.quotes.USD.volume_24h,
     }));
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Top coins request timeout — попробуй позже');
+  } catch (error: any) {
+    console.error('Top coins fetch error:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      attempt,
+      url,
+    });
+    if (error.name === 'AbortError') {
+      throw new Error('Не удалось загрузить топ монет из-за таймаута. Попробуйте позже.');
     }
-    console.error('Top coins fetch error:', error);
     throw error;
   }
 }
@@ -73,7 +83,7 @@ export async function fetchTopCoins(attempt = 1): Promise<CoinMarket[]> {
 export async function fetchCoinPriceHistory(coinId: string, attempt = 1): Promise<MarketData> {
   if (!coinId) {
     console.error('fetchCoinPriceHistory: coinId is empty or undefined');
-    throw new Error('Invalid coin ID');
+    throw new Error('Недопустимый ID монеты');
   }
   const url = `${COINPAPRIKA_BASE}/tickers/${coinId}/historical?start=${
     new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -83,7 +93,8 @@ export async function fetchCoinPriceHistory(coinId: string, attempt = 1): Promis
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'CryptoDashboard/1.0 (your-email@example.com)' },
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(30000),
+      cache: 'force-cache',
     });
 
     console.log(`Price history response: ${res.status} - ${res.statusText}`);
@@ -96,7 +107,7 @@ export async function fetchCoinPriceHistory(coinId: string, attempt = 1): Promis
         await new Promise(resolve => setTimeout(resolve, 60000));
         return fetchCoinPriceHistory(coinId, attempt + 1);
       }
-      throw new Error(`Price history API error ${res.status}: ${errorText}`);
+      throw new Error(`Ошибка API истории цен ${res.status}: ${errorText}`);
     }
 
     const data: CoinpaprikaHistoricalEntry[] = await res.json();
@@ -106,11 +117,17 @@ export async function fetchCoinPriceHistory(coinId: string, attempt = 1): Promis
         entry.price,
       ]),
     };
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Price history request timeout — попробуй позже');
+  } catch (error: any) {
+    console.error('Price history fetch error:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      attempt,
+      url,
+    });
+    if (error.name === 'AbortError') {
+      throw new Error('Не удалось загрузить историю цен из-за таймаута. Попробуйте позже.');
     }
-    console.error('Price history fetch error:', error);
     throw error;
   }
 }
@@ -122,7 +139,8 @@ export async function fetchGlobalData(attempt = 1): Promise<GlobalData> {
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'CryptoDashboard/1.0 (your-email@example.com)' },
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(30000),
+      cache: 'force-cache',
     });
 
     console.log(`Global data response: ${res.status} - ${res.statusText}`);
@@ -135,7 +153,7 @@ export async function fetchGlobalData(attempt = 1): Promise<GlobalData> {
         await new Promise(resolve => setTimeout(resolve, 60000));
         return fetchGlobalData(attempt + 1);
       }
-      throw new Error(`Global data API error ${res.status}: ${errorText}`);
+      throw new Error(`Ошибка API глобальных данных ${res.status}: ${errorText}`);
     }
 
     const data: CoinpaprikaGlobalData = await res.json();
@@ -146,11 +164,17 @@ export async function fetchGlobalData(attempt = 1): Promise<GlobalData> {
         active_cryptocurrencies: data.active_cryptocurrencies,
       },
     };
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Global data request timeout — попробуй позже');
+  } catch (error: any) {
+    console.error('Global data fetch error:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      attempt,
+      url,
+    });
+    if (error.name === 'AbortError') {
+      throw new Error('Не удалось загрузить глобальные данные из-за таймаута. Попробуйте позже.');
     }
-    console.error('Global data fetch error:', error);
     throw error;
   }
 }
