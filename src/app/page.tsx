@@ -107,9 +107,14 @@ export default function Dashboard() {
 
   const options: ChartOptions<'line'> = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'top' as const },
-      title: { display: true, text: 'Цена за 30 дней', font: { family: 'Montserrat', size: 18 } },
+      legend: { position: 'top' as const, labels: { font: { size: 12 } } },
+      title: { 
+        display: true, 
+        text: 'Цена за 30 дней', 
+        font: { family: 'Montserrat', size: 16 } 
+      },
       tooltip: { enabled: true },
       zoom: {
         zoom: {
@@ -126,18 +131,18 @@ export default function Dashboard() {
     scales: {
       x: {
         grid: { display: false },
+        ticks: { font: { size: 10 } }, 
       },
       y: {
-        grid: {
-          color: 'var(--card-border)',
-        },
+        grid: { color: 'var(--card-border)' },
+        ticks: { font: { size: 10 } },
       },
     },
   };
 
   const zoomIn = () => {
     if (chartRef.current) {
-      chartRef.current.zoom(1.1); 
+      chartRef.current.zoom(1.1);
     }
   };
 
@@ -161,7 +166,7 @@ export default function Dashboard() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="text-2xl font-semibold">Загрузка...</div>
+        <div className="text-lg sm:text-2xl font-semibold">Загрузка...</div>
       </motion.div>
     );
   }
@@ -174,29 +179,29 @@ export default function Dashboard() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="text-2xl font-semibold">{error}</div>
+        <div className="text-lg sm:text-2xl font-semibold">{error}</div>
       </motion.div>
     );
   }
 
   return (
     <motion.div
-      className="min-h-screen p-6 md:p-8"
+      className="min-h-screen p-4 sm:p-6 md:p-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
       {/* Header */}
       <motion.div
-        className="flex justify-between items-center mb-8"
+        className="flex justify-between items-center mb-6"
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 className="text-3xl md:text-4xl font-bold">Crypto Dashboard</h1>
+        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold">Crypto Dashboard</h1>
         <motion.button
           onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-          className="theme-toggle p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          className="theme-toggle p-3 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
         >
@@ -216,12 +221,12 @@ export default function Dashboard() {
           placeholder="Поиск монет..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full p-3 pr-10 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-all"
+          className="w-full p-3 pr-12 sm:pr-10 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-all text-sm sm:text-base"
         />
         {search && (
           <motion.button
             onClick={clearSearch}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors p-2"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
@@ -235,53 +240,53 @@ export default function Dashboard() {
 
       {/* Глобальная статистика */}
       <motion.div
-        className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6"
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.4 }}
       >
-        <div className="card p-6 text-center">
-          <h2 className="text-lg font-medium text-[var(--text-secondary)]">Общая капитализация</h2>
-          <p className="text-2xl font-bold mt-2">
+        <div className="card p-4 sm:p-6 text-center">
+          <h2 className="text-sm sm:text-lg font-medium text-[var(--text-secondary)]">Общая капитализация</h2>
+          <p className="text-lg sm:text-2xl font-bold mt-2">
             {globalData?.data?.total_market_cap?.usd
               ? `$${(globalData.data.total_market_cap.usd / 1e12).toFixed(2)}T`
               : 'N/A'}
           </p>
         </div>
-        <div className="card p-6 text-center">
-          <h2 className="text-lg font-medium text-[var(--text-secondary)]">Объем торгов (24ч)</h2>
-          <p className="text-2xl font-bold mt-2">
+        <div className="card p-4 sm:p-6 text-center">
+          <h2 className="text-sm sm:text-lg font-medium text-[var(--text-secondary)]">Объем торгов (24ч)</h2>
+          <p className="text-lg sm:text-2xl font-bold mt-2">
             {globalData?.data?.total_volume?.usd
               ? `$${(globalData.data.total_volume.usd / 1e9).toFixed(2)}B`
               : 'N/A'}
           </p>
         </div>
-        <div className="card p-6 text-center">
-          <h2 className="text-lg font-medium text-[var(--text-secondary)]">Активных монет</h2>
-          <p className="text-2xl font-bold mt-2">
+        <div className="card p-4 sm:p-6 text-center">
+          <h2 className="text-sm sm:text-lg font-medium text-[var(--text-secondary)]">Активных монет</h2>
+          <p className="text-lg sm:text-2xl font-bold mt-2">
             {globalData?.data?.active_cryptocurrencies?.toLocaleString() ?? 'N/A'}
           </p>
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Таблица топ-10 */}
         <motion.div
-          className="card p-6"
+          className="card p-4 sm:p-6 overflow-x-auto"
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.6 }}
         >
-          <h2 className="text-xl font-semibold mb-4">Топ-10 криптовалют</h2>
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">Топ-10 криптовалют</h2>
           <AnimatePresence>
-            <table className="w-full text-left">
+            <table className="w-full text-left text-sm sm:text-base min-w-[500px]">
               <thead>
                 <tr className="border-b border-[var(--card-border)]">
-                  <th className="py-3 text-[var(--text-secondary)]">#</th>
-                  <th className="py-3 text-[var(--text-secondary)]">Монета</th>
-                  <th className="py-3 text-[var(--text-secondary)]">Цена (USD)</th>
-                  <th className="py-3 text-[var(--text-secondary)]">Изменение 24ч</th>
-                  <th className="py-3 text-[var(--text-secondary)]">Рыночная кап.</th>
+                  <th className="py-2 sm:py-3 text-[var(--text-secondary)]">#</th>
+                  <th className="py-2 sm:py-3 text-[var(--text-secondary)]">Монета</th>
+                  <th className="py-2 sm:py-3 text-[var(--text-secondary)]">Цена (USD)</th>
+                  <th className="py-2 sm:py-3 text-[var(--text-secondary)] hidden sm:table-cell">Изменение 24ч</th>
+                  <th className="py-2 sm:py-3 text-[var(--text-secondary)] hidden md:table-cell">Рыночная кап.</th>
                 </tr>
               </thead>
               <tbody>
@@ -292,27 +297,36 @@ export default function Dashboard() {
                       selectedCoin?.id === coin.id
                         ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
                         : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
+                    } touch-manipulation`}
                     onClick={() => setSelectedCoin(coin)}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.3, delay: idx * 0.05 }}
                   >
-                    <td className="py-3">{idx + 1}</td>
-                    <td className="py-3 flex items-center">
-                      <img src={coin.image} alt={coin.name} className="w-6 h-6 mr-2 rounded-full" />
-                      {coin.name}{' '}
+                    <td className="py-2 sm:py-3">{idx + 1}</td>
+                    <td className="py-2 sm:py-3 flex items-center">
+                      {coin.image && (
+                        <img
+                          src={coin.image}
+                          alt={coin.name}
+                          className="w-5 h-5 sm:w-6 sm:h-6 mr-2 rounded-full"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      )}
+                      <span className="truncate max-w-[120px] sm:max-w-[150px]">{coin.name}</span>
                       <span className="text-[var(--text-secondary)] ml-1">({coin.symbol.toUpperCase()})</span>
                     </td>
-                    <td className="py-3">${coin.current_price.toFixed(2)}</td>
+                    <td className="py-2 sm:py-3">${coin.current_price.toFixed(2)}</td>
                     <td
-                      className="py-3"
+                      className="py-2 sm:py-3 hidden sm:table-cell"
                       style={{ color: coin.price_change_percentage_24h >= 0 ? '#22c55e' : '#ef4444' }}
                     >
                       {coin.price_change_percentage_24h.toFixed(2)}%
                     </td>
-                    <td className="py-3">${(coin.market_cap / 1e9).toFixed(2)}B</td>
+                    <td className="py-2 sm:py-3 hidden md:table-cell">${(coin.market_cap / 1e9).toFixed(2)}B</td>
                   </motion.tr>
                 ))}
               </tbody>
@@ -322,51 +336,52 @@ export default function Dashboard() {
 
         {/* График */}
         <motion.div
-          className="card p-6"
+          className="card p-4 sm:p-6"
           initial={{ x: 20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.8 }}
         >
-          <h2 className="text-xl font-semibold mb-4">График цены</h2>
-          {selectedCoin && chartData && (
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              <Line data={chartData} options={options} ref={chartRef} />
-              <div className="flex gap-2 mt-4 justify-center">
-                <motion.button
-                  onClick={zoomIn}
-                  className="zoom-button p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  title="Увеличить"
-                >
-                  <ZoomInIcon className="w-5 h-5" />
-                </motion.button>
-                <motion.button
-                  onClick={zoomOut}
-                  className="zoom-button p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  title="Уменьшить"
-                >
-                  <ZoomOutIcon className="w-5 h-5" />
-                </motion.button>
-                <motion.button
-                  onClick={resetZoom}
-                  className="zoom-button p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  title="Сбросить масштаб"
-                >
-                  <ResetIcon className="w-5 h-5" />
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
-          <p className="text-center selected-coin mt-4">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">График цены</h2>
+{selectedCoin && chartData && (
+  <motion.div
+    initial={{ scale: 0.95, opacity: 0 }}
+    animate={{ scale: 1, opacity: 1 }}
+    transition={{ duration: 0.5 }}
+    className="h-[300px] sm:h-[400px]"
+  >
+    <Line data={chartData} options={options} ref={chartRef} />
+    <div className="flex gap-3 mt-6 justify-center">
+      <motion.button
+        onClick={zoomIn}
+        className="zoom-button p-1 sm:p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        title="Увеличить"
+      >
+        <ZoomInIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+      </motion.button>
+      <motion.button
+        onClick={zoomOut}
+        className="zoom-button p-1 sm:p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        title="Уменьшить"
+      >
+        <ZoomOutIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+      </motion.button>
+      <motion.button
+        onClick={resetZoom}
+        className="zoom-button p-1 sm:p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        title="Сбросить масштаб"
+      >
+        <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+      </motion.button>
+    </div>
+  </motion.div>
+)}
+          <p className="text-center selected-coin mt-20 text-sm sm:text-base">
             Выбрано: {selectedCoin ? selectedCoin.name : 'N/A'}
           </p>
         </motion.div>
