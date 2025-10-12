@@ -95,8 +95,8 @@ export default function Dashboard() {
           {
             label: selectedCoin ? `${selectedCoin.name} Price (USD)` : 'Price (USD)',
             data: priceHistory.prices.map(([_, price]: [number, number]) => price),
-            borderColor: 'var(--accent)',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            borderColor: theme === 'dark' ? '#c7c7c7ff' : 'var(--accent)',
+            backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(59, 130, 246, 0.1)',
             tension: 0.4,
             pointRadius: 3,
             pointHoverRadius: 6,

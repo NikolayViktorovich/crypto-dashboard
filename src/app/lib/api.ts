@@ -9,7 +9,7 @@ export async function fetchTopCoins(attempt = 1): Promise<CoinMarket[]> {
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'CryptoDashboard/1.0 (your-email@example.com)' },
-      signal: AbortSignal.timeout(15000), // Увеличиваем до 15 сек
+      signal: AbortSignal.timeout(15000), 
     });
 
     console.log(`Top coins response: ${res.status} - ${res.statusText}`);
@@ -46,7 +46,7 @@ export async function fetchCoinPriceHistory(coinId: string, attempt = 1): Promis
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'CryptoDashboard/1.0 (your-email@example.com)' },
-      signal: AbortSignal.timeout(15000), // Увеличиваем до 15 сек
+      signal: AbortSignal.timeout(15000),
     });
 
     console.log(`Price history response: ${res.status} - ${res.statusText}`);
@@ -79,7 +79,7 @@ export async function fetchGlobalData(attempt = 1): Promise<GlobalData> {
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'CryptoDashboard/1.0 (your-email@example.com)' },
-      signal: AbortSignal.timeout(15000), // Увеличиваем до 15 сек
+      signal: AbortSignal.timeout(15000),
     });
 
     console.log(`Global data response: ${res.status} - ${res.statusText}`);
