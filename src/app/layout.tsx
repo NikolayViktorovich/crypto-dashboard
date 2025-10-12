@@ -1,10 +1,12 @@
 import { ReactNode } from 'react';
+import { SessionProvider } from 'next-auth/react';
 import './globals.css';
 
 export const metadata = {
   title: 'Crypto Dashboard',
-  description: 'Криптовалютный дашборд с юзом Next.js и CoinGecko API',
+  description: 'Cryptocurrency dashboard with modern UI',
 };
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -14,7 +16,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <SessionProvider>{children}</SessionProvider>
+      </body>
     </html>
   );
 }
