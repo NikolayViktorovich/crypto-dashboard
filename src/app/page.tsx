@@ -58,40 +58,41 @@ export default function Dashboard() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [coins, global] = await Promise.all([
-          fetchTopCoins().catch(() => {
-            throw new Error('Не удалось загрузить топ монет.');
-          }),
-          fetchGlobalData().catch(() => {
-            throw new Error('Не удалось загрузить глобальные данные.');
-          }),
-        ]);
-        setTopCoins(coins);
-        setSelectedCoin(coins[0]);
-        setGlobalData(global);
-        localStorage.setItem('topCoins', JSON.stringify(coins));
-        localStorage.setItem('globalData', JSON.stringify(global));
-      } catch (error: any) {
-        console.error('Error loading data:', error);
-        setError(error.message || 'Не удалось загрузить данные. Попробуйте позже.');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    const cachedCoins = localStorage.getItem('topCoins');
-    const cachedGlobal = localStorage.getItem('globalData');
-    if (cachedCoins && cachedGlobal) {
-      setTopCoins(JSON.parse(cachedCoins));
-      setGlobalData(JSON.parse(cachedGlobal));
+useEffect(() => {
+  async function loadData() {
+    try {
+      const [coins, global] = await Promise.all([
+        fetchTopCoins().catch(() => {
+          throw new Error('Не удалось загрузить топ монет.');
+        }),
+        fetchGlobalData().catch(() => {
+          throw new Error('Не удалось загрузить глобальные данные.');
+        }),
+      ]);
+      setTopCoins(coins);
+      setSelectedCoin(coins[0]);
+      setGlobalData(global);
+      localStorage.setItem('topCoins', JSON.stringify(coins));
+      localStorage.setItem('globalData', JSON.stringify(global));
+    } catch (error) {
+      console.error('Error loading data:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось загрузить данные. Попробуйте позже.';
+      setError(errorMessage);
+    } finally {
       setLoading(false);
-    } else {
-      loadData();
     }
-  }, []);
+  }
+
+  const cachedCoins = localStorage.getItem('topCoins');
+  const cachedGlobal = localStorage.getItem('globalData');
+  if (cachedCoins && cachedGlobal) {
+    setTopCoins(JSON.parse(cachedCoins));
+    setGlobalData(JSON.parse(cachedGlobal));
+    setLoading(false);
+  } else {
+    loadData();
+  }
+}, []);
 
   useEffect(() => {
     if (selectedCoin) {
@@ -109,24 +110,24 @@ export default function Dashboard() {
     setSearch('');
   };
 
-  const chartData: ChartData<'line', number[], string> | null = priceHistory
-    ? {
-        labels: priceHistory.prices.map(([timestamp]: [number, number]) =>
-          new Date(timestamp).toLocaleDateString()
-        ),
-        datasets: [
-          {
-            label: selectedCoin ? `${selectedCoin.name} Цена (USD)` : 'Цена (USD)',
-            data: priceHistory.prices.map(([_, price]: [number, number]) => price),
-            borderColor: theme === 'dark' ? '#c7c7c7ff' : 'var(--accent)',
-            backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-            tension: 0.4,
-            pointRadius: 3,
-            pointHoverRadius: 6,
-          },
-        ],
-      }
-    : null;
+const chartData: ChartData<'line', number[], string> | null = priceHistory
+  ? {
+      labels: priceHistory.prices.map((priceEntry: [number, number]) =>
+        new Date(priceEntry[0]).toLocaleDateString()
+      ),
+      datasets: [
+        {
+          label: selectedCoin ? `${selectedCoin.name} Цена (USD)` : 'Цена (USD)',
+          data: priceHistory.prices.map((priceEntry: [number, number]) => priceEntry[1]),
+          borderColor: theme === 'dark' ? '#c7c7c7ff' : 'var(--accent)',
+          backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+          tension: 0.4,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+        },
+      ],
+    }
+  : null;
 
   const options: ChartOptions<'line'> = {
     responsive: true,
