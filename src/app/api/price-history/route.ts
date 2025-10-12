@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { CoinMarketCapResponse, CoinMarketCapCoin } from '@/app/types/crypto';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -13,20 +14,21 @@ export async function GET(request: Request) {
   }
 
   try {
-
-    const response = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?id=${id}`, {
-      headers: {
-        'X-CMC_PRO_API_KEY': apiKey,
-        'Accept': 'application/json',
-      },
-      method: 'GET',
-    });
-    const data = await response.json();
-    const coinData = data.data[id];
-    const prices = Object.values(coinData.quote.USD.history || []).map((h: any) => [
-      new Date(h.timestamp).getTime(),
-      h.price,
-    ]);
+    const response = await fetch(
+      `https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?id=${id}`,
+      {
+        headers: {
+          'X-CMC_PRO_API_KEY': apiKey,
+          Accept: 'application/json',
+        },
+        method: 'GET',
+      }
+    );
+    const data: CoinMarketCapResponse = await response.json();
+    const coinData: CoinMarketCapCoin = data.data[id];
+    const prices = Object.values(coinData.quote.USD.history || []).map(
+      (h: { timestamp: string; price: number }) => [new Date(h.timestamp).getTime(), h.price]
+    );
 
     return NextResponse.json({ prices });
   } catch (error) {

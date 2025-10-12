@@ -1,3 +1,47 @@
+export interface CoinMarketCapResponse {
+  data: {
+    [id: string]: CoinMarketCapCoin;
+  };
+}
+
+export interface CoinMarketCapCoin {
+  quote: {
+    USD: {
+      history?: { timestamp: string; price: number }[];
+    };
+  };
+}
+
+export interface CoinpaprikaTicker {
+  id: string;
+  symbol: string;
+  name: string;
+  quotes: {
+    USD: {
+      price: number;
+      market_cap: number;
+      percent_change_24h: number;
+      volume_24h: number;
+    };
+  };
+}
+
+export interface CoinpaprikaHistoricalEntry {
+  timestamp: string;
+  price: number;
+}
+
+export interface CoinpaprikaGlobalData {
+  market_cap_usd: number;
+  volume_24h_usd: number;
+  active_cryptocurrencies: number;
+}
+
+export interface CoinGeckoCoin {
+  id: string;
+  image: string;
+}
+
 export interface CoinMarket {
   id: string;
   symbol: string;

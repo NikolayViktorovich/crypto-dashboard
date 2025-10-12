@@ -1,4 +1,4 @@
-import { CoinMarket, MarketData, GlobalData } from '../types/crypto';
+import { CoinMarket, MarketData, GlobalData, CoinpaprikaTicker, CoinpaprikaHistoricalEntry, CoinpaprikaGlobalData, CoinGeckoCoin } from '../types/crypto';
 
 const COINPAPRIKA_BASE = 'https://api.coinpaprika.com/v1';
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
@@ -13,10 +13,13 @@ export async function fetchTopCoins(attempt = 1): Promise<CoinMarket[]> {
         headers: { 'User-Agent': 'CryptoDashboard/1.0 (your-email@example.com)' },
         signal: AbortSignal.timeout(15000),
       }),
-      fetch(`${COINGECKO_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false`, {
-        headers: { 'User-Agent': 'CryptoDashboard/1.0 (your-email@example.com)' },
-        signal: AbortSignal.timeout(15000),
-      }),
+      fetch(
+        `${COINGECKO_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false`,
+        {
+          headers: { 'User-Agent': 'CryptoDashboard/1.0 (your-email@example.com)' },
+          signal: AbortSignal.timeout(15000),
+        }
+      ),
     ]);
 
     console.log(`Top coins response (Coinpaprika): ${paprikaRes.status} - ${paprikaRes.statusText}`);
@@ -44,15 +47,15 @@ export async function fetchTopCoins(attempt = 1): Promise<CoinMarket[]> {
       console.warn('CoinGecko failed; using empty string for images');
     }
 
-    const paprikaData = await paprikaRes.json();
-    const geckoData = geckoRes.ok ? await geckoRes.json() : [];
-    const geckoImageMap = new Map(geckoData.map((coin: any) => [coin.id, coin.image]));
+    const paprikaData: CoinpaprikaTicker[] = await paprikaRes.json();
+    const geckoData: CoinGeckoCoin[] = geckoRes.ok ? await geckoRes.json() : [];
+    const geckoImageMap = new Map(geckoData.map((coin: CoinGeckoCoin) => [coin.id, coin.image]));
 
-    return paprikaData.map((coin: any) => ({
+    return paprikaData.map((coin: CoinpaprikaTicker) => ({
       id: coin.id,
       symbol: coin.symbol,
       name: coin.name,
-      image: geckoImageMap.get(coin.id.replace(/-.*/, '')) || '', 
+      image: geckoImageMap.get(coin.id.replace(/-.*/, '')) || '',
       current_price: coin.quotes.USD.price,
       market_cap: coin.quotes.USD.market_cap,
       price_change_percentage_24h: coin.quotes.USD.percent_change_24h,
@@ -72,7 +75,9 @@ export async function fetchCoinPriceHistory(coinId: string, attempt = 1): Promis
     console.error('fetchCoinPriceHistory: coinId is empty or undefined');
     throw new Error('Invalid coin ID');
   }
-  const url = `${COINPAPRIKA_BASE}/tickers/${coinId}/historical?start=${new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}&interval=1d`;
+  const url = `${COINPAPRIKA_BASE}/tickers/${coinId}/historical?start=${
+    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  }&interval=1d`;
   console.log(`Fetching price history for ${coinId} (attempt ${attempt}): ${url}`);
 
   try {
@@ -94,9 +99,12 @@ export async function fetchCoinPriceHistory(coinId: string, attempt = 1): Promis
       throw new Error(`Price history API error ${res.status}: ${errorText}`);
     }
 
-    const data = await res.json();
+    const data: CoinpaprikaHistoricalEntry[] = await res.json();
     return {
-      prices: data.map((entry: any) => [new Date(entry.timestamp).getTime(), entry.price]),
+      prices: data.map((entry: CoinpaprikaHistoricalEntry) => [
+        new Date(entry.timestamp).getTime(),
+        entry.price,
+      ]),
     };
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
@@ -130,7 +138,7 @@ export async function fetchGlobalData(attempt = 1): Promise<GlobalData> {
       throw new Error(`Global data API error ${res.status}: ${errorText}`);
     }
 
-    const data = await res.json();
+    const data: CoinpaprikaGlobalData = await res.json();
     return {
       data: {
         total_market_cap: { usd: data.market_cap_usd },
