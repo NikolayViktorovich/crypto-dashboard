@@ -1,94 +1,95 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #1a1a1a;
-  --card-bg: #f9fafb;
-  --card-border: #e5e7eb;
-  --accent:  #6b7280;
-  --text-secondary: #6b7280;
-}
-
-[data-theme="dark"] {
-  --background: #1a1a1a;
-  --foreground: #e5e7eb;
-  --card-bg: #2d2d2d;
-  --card-border: #4b4b4b;
-  --accent:#4b4b4b;
-  --text-secondary: #9ca3af;
+  --background: #000000;
+  --foreground: #ffffff;
+  --card-bg: #0a0a0a;
+  --card-border: #333333;
+  --accent: #00ff88;
+  --text-secondary: #666666;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Montserrat', sans-serif;
-  transition: background 0.3s ease, color 0.3s ease;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 .card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 8px;
+  box-shadow: none;
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  transform: none;
+  box-shadow: none;
 }
 
 input, button {
-  font-family: 'Montserrat', sans-serif;
+  font-family: inherit;
 }
 
 .theme-toggle {
   padding: 8px;
   border-radius: 50%;
-  transition: background 0.3s ease, color 0.3s ease;
 }
 
-[data-theme="light"] .theme-toggle {
-  background: #ffffff;
-  color: #6b7280;
+table tr {
+  transition: all 0.2s ease;
 }
 
-[data-theme="dark"] .theme-toggle {
-  background: #2d2d2d;
-  color: #e5e7eb;
-}
-
-[data-theme="light"] .selected-coin {
-  color: #6b7280;
-}
-
-[data-theme="dark"] .selected-coin {
-  color: #9ca3af;
-}
-
-.zoom-button {
-  padding: 8px;
-  border-radius: 8px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  transition: background 0.3s ease, transform 0.2s ease;
-}
-
-.zoom-button:hover {
-  background: var(--accent);
-  color: #ffffff;
-  transform: scale(1.05);
-}
 table tr:hover {
-  background-color: #f3f4f6 !important; 
+  background-color: rgba(26, 26, 26, 0.8) !important;
 }
-[data-theme="dark"] table tr:hover {
-  background-color: #374151 !important; 
+
+* {
+  box-sizing: border-box;
 }
-[data-theme="light"] input[type="text"] {
-  background-color: #1f1f20 !important; 
+
+body {
+  background: #000000;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
 }
-[data-theme="dark"] .chart-line {
-  border-color: #ffffff !important;
-  background-color: rgba(255, 255, 255, 0.1) !important;
+
+input, textarea, button {
+  font-family: 'Inter', sans-serif;
+}
+
+.border-l-4 {
+  border-left-style: solid;
+}
+
+.hover\:bg-\[\#1a1a1a\]:hover {
+  background-color: #1a1a1a !important;
+}
+
+.hover\:border-l-\[\#00ff88\]:hover {
+  border-left-color: #00ff88 !important;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00ff88;
 }

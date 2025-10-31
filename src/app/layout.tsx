@@ -1,23 +1,23 @@
 import { ReactNode } from 'react';
-import { SessionProvider } from 'next-auth/react';
+import { Inter } from 'next/font/google';
 import './globals.css';
 
+const inter = Inter({ 
+  subsets: ['latin', 'cyrillic'],
+  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
+});
+
 export const metadata = {
-  title: 'Crypto Dashboard',
-  description: 'Cryptocurrency dashboard with modern UI',
+  title: 'Crypto Terminal',
+  description: 'Professional cryptocurrency trading terminal with AI analysis',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body>
-        <SessionProvider>{children}</SessionProvider>
+    <html lang="en" className={inter.className}>
+      <body className="bg-black text-white">
+        {children}
       </body>
     </html>
   );
