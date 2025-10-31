@@ -2,15 +2,20 @@ import OpenAI from 'openai';
 import { AIPrediction, TechnicalIndicators } from '@/app/types/ai-analysis';
 import { MarketData, CoinMarket } from '@/app/types/crypto';
 
+interface MarketDataSummary {
+  total_market_cap?: { usd: number };
+  total_volume?: { usd: number };
+}
+
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
+  apiKey: process.env.HUGGINGFACE_API_KEY!,
 });
 
 export class CryptoAnalysisService {
   static async generateTechnicalAnalysis(
     coin: CoinMarket,
     priceHistory: MarketData,
-    marketData: any
+    marketData: MarketDataSummary
   ): Promise<AIPrediction> {
     const indicators = this.calculateTechnicalIndicators(priceHistory);
     
@@ -44,7 +49,6 @@ export class CryptoAnalysisService {
 
   private static calculateTechnicalIndicators(priceHistory: MarketData): TechnicalIndicators {
     const prices = priceHistory.prices.map(p => p[1]);
-    const volumes = priceHistory.prices.map(p => p[1]); 
     const rsi = this.calculateRSI(prices);
     const macd = this.calculateMACD(prices);
     const moving_averages = this.calculateMovingAverages(prices);
@@ -135,7 +139,7 @@ export class CryptoAnalysisService {
     coin: CoinMarket,
     priceHistory: MarketData,
     indicators: TechnicalIndicators,
-    marketData: any
+    marketData: MarketDataSummary
   ): string {
     const currentPrice = coin.current_price;
     const priceChange = coin.price_change_percentage_24h;
@@ -164,8 +168,8 @@ export class CryptoAnalysisService {
 Последние 10 цен: ${priceHistory.prices.slice(-10).map(p => p[1].toFixed(2)).join(', ')}
 
 ОБЩАЯ РЫНОЧНАЯ СИТУАЦИЯ:
-- Общая капитализация рынка: $${(marketData?.total_market_cap?.usd / 1e12).toFixed(2)} трлн
-- Общий объем: $${(marketData?.total_volume?.usd / 1e9).toFixed(2)} млрд
+- Общая капитализация рынка: $${(marketData?.total_market_cap?.usd ? marketData.total_market_cap.usd / 1e12 : 0).toFixed(2)} трлн
+- Общий объем: $${(marketData?.total_volume?.usd ? marketData.total_volume.usd / 1e9 : 0).toFixed(2)} млрд
 
 ПРОШУ ПРОАНАЛИЗИРОВАТЬ:
 1. Тренд (бычий/медвежий/нейтральный) и уверенность в %
@@ -186,9 +190,6 @@ export class CryptoAnalysisService {
     }
 
     try {
-      const trendMatch = response.match(/тренд[^.]*(бычий|медвежий|нейтральный)/i);
-      const confidenceMatch = response.match(/(\d+)%/);
-      
       return {
         trend: this.determineTrend(indicators),
         confidence: this.calculateConfidence(indicators),

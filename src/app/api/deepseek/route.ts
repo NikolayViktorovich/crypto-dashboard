@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+interface CoinData {
+  name: string;
+  symbol: string;
+  current_price: number;
+  price_change_percentage_24h: number;
+  market_cap: number;
+  total_volume?: number;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { coinData } = await request.json();
@@ -112,7 +121,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function generateFallbackAnalysis(coinData: any) {
+function generateFallbackAnalysis(coinData: CoinData): string {
   const change = coinData.price_change_percentage_24h;
   const trend = change > 0 ? 'бычий' : change < 0 ? 'медвежий' : 'нейтральный';
   
